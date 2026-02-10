@@ -1,47 +1,49 @@
 # KineticCSDetector
 CNN pipeline trained on SheetGen synthetic current-sheet events to scan space-plasma time series and flag candidate small kinetic-scale current-sheet intervals. Outputs ranked time windows for targeted physics follow-up, reducing manual search across large datasets.
 
-# data-fetch 
+# utils/data-fetch.ipynb
 
-`data-fetch` is the ingestion and preprocessing engine for **KineticCSDetector**.  
-It pulls burst-mode MMS measurements, cleans and aligns multi-cadence streams, transforms vectors to LMN, and generates physics-informed features used downstream for kinetic current-sheet detection.
+`utils/data-fetch.ipynb` is the current **notebook-based** data ingestion and preprocessing workflow for **KineticCSDetector**.
 
-## What this module does
+It pulls MMS burst-mode measurements, cleans and aligns multi-cadence streams, transforms vectors to LMN, and generates physics-informed features used for kinetic current-sheet analysis and ML-ready exports.
 
-- Fetches MMS burst data for a user-specified time range:
-  - **FPI** (density, ion/electron bulk velocity)
+## What this notebook does
+
+- Fetches MMS burst data for a user-defined time range:
+  - **FPI** (electron/ion density, bulk velocity)
   - **FGM** (magnetic field)
   - **EDP** (electric field)
 - Cleans time series (NaNs, duplicate timestamps, sorting)
-- Handles multi-rate alignment with configurable interpolation policy:
-  - `strict` (NaN outside range)
-  - `edge_hold` (hold edge values outside range)
-  - `linear_extrap` (full extrapolation)
-- Computes LMN coordinates (HMVA/MVA fallback)
-- Computes core physics features:
-  - \(\mathbf{J}=e(n_i\mathbf{V}_i-n_e\mathbf{V}_e)\)
-  - \(|\mathbf{J}|\)
-  - \(E\cdot J\) using electron-frame corrected field
+- Aligns multi-rate signals with configurable interpolation policy:
+  - `strict` (NaN outside source range)
+  - `edge_hold` (hold boundary values)
+  - `linear_extrap` (linear extrapolation outside range)
+- Computes LMN coordinates (HMVA with MVA fallback)
+- Computes key physics features:
+  - `J = e (ni*Vi - ne*Ve)`
+  - `|J|`
+  - `E·J` using electron-frame corrected electric field
 - Prints and saves cadence/resolution diagnostics
+- Generates a 6-panel stack plot for quick event inspection
 
 ---
 
 ## Inputs
 
-- `trange`: start/end timestamps (MMS format), e.g.
+- `trange`: MMS-format start/end time, e.g.  
   `["2017-01-28/09:09:00.1888", "2017-01-28/09:09:02.4419"]`
-- `probe`: MMS spacecraft ID (`1..4`)
-- `data_rate`: typically `brst`
-- `interp_policy`: `strict`, `edge_hold`, or `linear_extrap`
+- `probe`: spacecraft ID (`1..4`)
+- `data_rate`: usually `brst`
+- `interp_policy`: `strict`, `edge_hold`, `linear_extrap`
 
 ---
 
 ## Outputs
 
-The extraction returns arrays ready for analysis/ML:
+Notebook returns/exports arrays for downstream analysis:
 
-- `time_B` (FGM/native B timeline)
-- `time_ref` (reference timeline, usually electron velocity cadence)
+- `time_B` (native magnetic timeline)
+- `time_ref` (reference timeline, typically electron-velocity cadence)
 - `BL, BM, BN`
 - `VeL, VeM, VeN`
 - `ViL, ViM, ViN`
@@ -54,21 +56,19 @@ Saved artifacts:
 
 ---
 
-## Quick start
+## Quick start (Notebook)
+
+1. Open `utils/data-fetch.ipynb`
+2. Set:
+   - `TRANGE`
+   - `PROBE`
+   - `interp_policy`
+3. Run all cells in order
+4. Inspect stack plots and exported files
+
+Example config:
 
 ```python
 TRANGE = ["2017-01-28/09:09:00.1888", "2017-01-28/09:09:02.4419"]
 PROBE = 1
-
-rs, res = extract_lmn_for_trange(
-    trange=TRANGE,
-    probe=PROBE,
-    data_rate="brst",
-    interp_policy="edge_hold",
-    drop_nan_rows=True,
-    print_resolutions=True
-)
-
-np.savez("mms_lmn_outputs_clean.npz", **rs)
-_write_resolution_report(res, out_path="resolution_report.txt")
-plot_stack(rs, TRANGE, probe=PROBE)
+INTERP_POLICY = "edge_hold"  # strict / edge_hold / linear_extrap
