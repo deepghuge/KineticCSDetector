@@ -1,7 +1,7 @@
 # KineticCSDetector
 CNN pipeline trained on SheetGen synthetic current-sheet events to scan space-plasma time series and flag candidate small kinetic-scale current-sheet intervals. Outputs ranked time windows for targeted physics follow-up, reducing manual search across large datasets.
 
-# data-fetch (KineticCSDetector)
+# data-fetch 
 
 `data-fetch` is the ingestion and preprocessing engine for **KineticCSDetector**.  
 It pulls burst-mode MMS measurements, cleans and aligns multi-cadence streams, transforms vectors to LMN, and generates physics-informed features used downstream for kinetic current-sheet detection.
